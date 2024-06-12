@@ -355,6 +355,7 @@ bool UpdateAttempterAndroid::ApplyPayload(
           __FILE__,
           "Unable to set network_id: " + headers[kPayloadPropertyNetworkId]);
     }
+    LOG(INFO) << "Using network ID: " << network_id;
   }
 
   LOG(INFO) << "Using this install plan:";
@@ -1346,7 +1347,6 @@ bool UpdateAttempterAndroid::setShouldSwitchSlotOnReboot(
   auto postinstall_runner_action =
       std::make_unique<PostinstallRunnerAction>(boot_control_, hardware_);
   postinstall_runner_action->set_delegate(this);
-  ErrorCode error_code{};
 
   // If last error code is kUpdatedButNotActive, we know that we reached this
   // state by calling applyPayload() with switch_slot=false. That applyPayload()
@@ -1359,6 +1359,7 @@ bool UpdateAttempterAndroid::setShouldSwitchSlotOnReboot(
     processor_->EnqueueAction(std::move(install_plan_action));
     SetStatusAndNotify(UpdateStatus::FINALIZING);
   } else {
+    ErrorCode error_code{};
     if (!boot_control_->GetDynamicPartitionControl()
              ->PreparePartitionsForUpdate(GetCurrentSlot(),
                                           GetTargetSlot(),
