@@ -19,7 +19,6 @@
 #include <set>
 
 #include <base/logging.h>
-#include <base/strings/string_util.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <libavb/libavb.h>

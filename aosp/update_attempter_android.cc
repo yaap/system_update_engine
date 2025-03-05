@@ -24,11 +24,11 @@
 #include <vector>
 
 #include <android-base/parsebool.h>
+#include <android-base/parseint.h>
 #include <android-base/properties.h>
 #include <android-base/unique_fd.h>
 #include <base/bind.h>
 #include <base/logging.h>
-#include <base/strings/string_number_conversions.h>
 #include <brillo/data_encoding.h>
 #include <brillo/message_loops/message_loop.h>
 #include <brillo/strings/string_utils.h>
@@ -114,7 +114,7 @@ bool LogAndSetError(Error* error,
 
 bool GetHeaderAsBool(const string& header, bool default_value) {
   int value = 0;
-  if (base::StringToInt(header, &value) && (value == 0 || value == 1))
+  if (android::base::ParseInt(header, &value) && (value == 0 || value == 1))
     return value == 1;
   return default_value;
 }
@@ -276,8 +276,8 @@ bool UpdateAttempterAndroid::ApplyPayload(
   InstallPlan::Payload payload;
   payload.size = payload_size;
   if (!payload.size) {
-    if (!base::StringToUint64(headers[kPayloadPropertyFileSize],
-                              &payload.size)) {
+    if (!android::base::ParseUint<uint64_t>(headers[kPayloadPropertyFileSize],
+                                            &payload.size)) {
       payload.size = 0;
     }
   }
@@ -286,8 +286,8 @@ bool UpdateAttempterAndroid::ApplyPayload(
     LOG(WARNING) << "Unable to decode base64 file hash: "
                  << headers[kPayloadPropertyFileHash];
   }
-  if (!base::StringToUint64(headers[kPayloadPropertyMetadataSize],
-                            &payload.metadata_size)) {
+  if (!android::base::ParseUint<uint64_t>(headers[kPayloadPropertyMetadataSize],
+                                          &payload.metadata_size)) {
     payload.metadata_size = 0;
   }
   // The |payload.type| is not used anymore since minor_version 3.
@@ -342,8 +342,8 @@ bool UpdateAttempterAndroid::ApplyPayload(
 
   NetworkId network_id = kDefaultNetworkId;
   if (!headers[kPayloadPropertyNetworkId].empty()) {
-    if (!base::StringToUint64(headers[kPayloadPropertyNetworkId],
-                              &network_id)) {
+    if (!android::base::ParseUint<uint64_t>(headers[kPayloadPropertyNetworkId],
+                                            &network_id)) {
       return LogAndSetGenericError(
           error,
           __LINE__,
@@ -508,10 +508,6 @@ bool UpdateAttempterAndroid::ResetStatus(Error* error) {
         "Status reset not allowed in this state, please "
         "cancel on going OTA first.");
   }
-  // last_error_ is used by setShouldSwitchSlot to determine if
-  // FilesystemVerification is done. Since we are discarding update
-  // state, discard this cache as well.
-  last_error_ = ErrorCode::kSuccess;
 
   if (apex_handler_android_ != nullptr) {
     LOG(INFO) << "Cleaning up reserved space for compressed APEX (if any)";
@@ -733,7 +729,6 @@ void UpdateAttempterAndroid::ProcessingDone(const ActionProcessor* processor,
   LOG(INFO) << "Processing Done.";
   metric_bytes_downloaded_.Flush(true);
   metric_total_bytes_downloaded_.Flush(true);
-  last_error_ = code;
   if (status_ == UpdateStatus::CLEANUP_PREVIOUS_UPDATE) {
     TerminateUpdateAndNotify(code);
     return;
@@ -1372,11 +1367,13 @@ bool UpdateAttempterAndroid::setShouldSwitchSlotOnReboot(
       std::make_unique<PostinstallRunnerAction>(boot_control_, hardware_);
   postinstall_runner_action->set_delegate(this);
 
-  // If last error code is kUpdatedButNotActive, we know that we reached this
-  // state by calling applyPayload() with switch_slot=false. That applyPayload()
-  // call would have already performed filesystem verification, therefore, we
+  // If |kPrefsPostInstallSucceeded| is set, we know that we reached this
+  // state by calling applyPayload() That applyPayload() call would have
+  // already performed filesystem verification, therefore, we
   // can safely skip the verification to save time.
-  if (last_error_ == ErrorCode::kUpdatedButNotActive) {
+  bool postinstall_succeeded = false;
+  if (prefs_->GetBoolean(kPrefsPostInstallSucceeded, &postinstall_succeeded) &&
+      postinstall_succeeded) {
     auto install_plan_action =
         std::make_unique<InstallPlanAction>(install_plan_);
     BondActions(install_plan_action.get(), postinstall_runner_action.get());
@@ -1473,6 +1470,18 @@ void UpdateAttempterAndroid::ScheduleCleanupPreviousUpdate() {
   processor_->set_delegate(this);
   SetStatusAndNotify(UpdateStatus::CLEANUP_PREVIOUS_UPDATE);
   processor_->StartProcessing();
+}
+
+bool UpdateAttempterAndroid::TriggerPostinstall(const std::string& partition,
+                                                Error* error) {
+  if (error) {
+    return LogAndSetGenericError(
+        error,
+        __LINE__,
+        __FILE__,
+        __FUNCTION__ + std::string(" is not implemented"));
+  }
+  return false;
 }
 
 void UpdateAttempterAndroid::OnCleanupProgressUpdate(double progress) {
