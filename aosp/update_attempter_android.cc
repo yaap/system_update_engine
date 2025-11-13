@@ -1196,7 +1196,7 @@ void UpdateAttempterAndroid::UpdateStateAfterReboot(const OTAResult result) {
       // return the space to user. Any subsequent attempt to install OTA will
       // allocate space again anyway.
       LOG(INFO) << "Detected a rollback, releasing space allocated for apex "
-                   "deompression.";
+                   "decompression.";
       apex_handler_android_->AllocateSpace({});
       DeltaPerformer::ResetUpdateProgress(prefs_, false);
     }

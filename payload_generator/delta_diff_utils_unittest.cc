@@ -864,4 +864,16 @@ TEST_F(DeltaDiffUtilsTest, FindAndCompactDeflates) {
       extents, bit_extents, &out_deflates));
 }
 
+TEST_F(DeltaDiffUtilsTest, FindAndCompactDeflatesOverlappingExtents) {
+  std::vector<puffin::BitExtent> bit_extents{{5000 * 8, 10}};
+
+  std::vector<Extent> extents = {
+      ExtentForRange(0, 5),
+      ExtentForRange(1, 10),
+  };
+  std::vector<puffin::BitExtent> out_deflates;
+  ASSERT_TRUE(deflate_utils::FindAndCompactDeflates(
+      extents, bit_extents, &out_deflates));
+}
+
 }  // namespace chromeos_update_engine
