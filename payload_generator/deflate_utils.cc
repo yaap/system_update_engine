@@ -242,7 +242,6 @@ bool CompactDeflates(const vector<Extent>& extents,
                      const vector<BitExtent>& in_deflates,
                      vector<BitExtent>* out_deflates) {
   size_t bytes_passed = 0;
-  size_t expected_deflates_size = in_deflates.size();
 
   out_deflates->reserve(in_deflates.size());
 
