@@ -287,6 +287,13 @@ cc_defaults {
         "payload_consumer/partition_update_generator_android.cc",
         "update_status_utils.cc",
     ],
+    cflags: [
+    ] + select(soong_config_variable("update_engine", "map_vabc_in_recovery"), {
+        any @ value: [
+            "-DMAP_VABC_IN_RECOVERY=1",
+        ],
+        default: [],
+    }),
 }
 
 cc_library_static {
