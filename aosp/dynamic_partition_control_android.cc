@@ -85,6 +85,8 @@ constexpr char kVirtualAbCompressionEnabled[] =
     "ro.virtual_ab.compression.enabled";
 constexpr auto&& kVirtualAbCompressionXorEnabled =
     "ro.virtual_ab.compression.xor.enabled";
+constexpr char kVirtualAbUserspaceSnapshotsEnabled[] =
+    "ro.virtual_ab.userspace.snapshots.enabled";
 
 // Currently, android doesn't have a retrofit prop for VAB Compression. However,
 // struct FeatureFlag forces us to determine if a feature is 'retrofit'. So this
@@ -136,6 +138,8 @@ DynamicPartitionControlAndroid::DynamicPartitionControlAndroid(
                                              kVirtualAbCompressionRetrofit)),
       virtual_ab_compression_xor_(
           GetFeatureFlag(kVirtualAbCompressionXorEnabled, "")),
+      virtual_ab_userspace_snapshots_(
+          GetFeatureFlag(kVirtualAbUserspaceSnapshotsEnabled, nullptr)),
       source_slot_(source_slot) {
   if (GetVirtualAbFeatureFlag().IsEnabled()) {
     snapshot_ = SnapshotManager::New();
@@ -1573,6 +1577,11 @@ bool DynamicPartitionControlAndroid::IsDynamicPartition(
 bool DynamicPartitionControlAndroid::UpdateUsesSnapshotCompression() {
   return GetVirtualAbFeatureFlag().IsEnabled() &&
          GetSnapshotManager()->UpdateUsesSnapuserd();
+}
+
+FeatureFlag
+DynamicPartitionControlAndroid::GetVirtualAbUserspaceSnapshotsFeatureFlag() {
+  return virtual_ab_userspace_snapshots_;
 }
 
 }  // namespace chromeos_update_engine

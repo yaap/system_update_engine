@@ -493,7 +493,10 @@ void CleanupPreviousUpdateAction::ReportMergeStats() {
   // DynamicPartitionControlInterface::UpdateUsesSnapshotCompression.
   // However, we have saved the flag in the snapshot report.
   bool vab_compression_used = report.compression_enabled();
-  constexpr bool userspace_snapshots_enabled = true;
+  bool userspace_snapshots_enabled =
+      boot_control_->GetDynamicPartitionControl()
+          ->GetVirtualAbUserspaceSnapshotsFeatureFlag()
+          .IsEnabled();
   bool userspace_snapshots_used = report.userspace_snapshots_used();
   bool xor_compression_enabled = boot_control_->GetDynamicPartitionControl()
                                      ->GetVirtualAbCompressionXorFeatureFlag()
